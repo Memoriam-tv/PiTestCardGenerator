@@ -18,8 +18,8 @@ Cortex-A7 keeps up at 1080p.
 ## Run
 
 ```bash
-python3 -m piclock                      # fullscreen at the current HDMI mode
-python3 -m piclock --windowed --size 1280x720   # dev mode on a workstation
+python3 -m piclock                              # on the Pi: fullscreen at the current HDMI mode
+.venv/bin/python -m piclock --windowed --size 1280x720   # dev mode on a workstation
 ```
 
 | flag | default | meaning |
@@ -33,6 +33,33 @@ python3 -m piclock --windowed --size 1280x720   # dev mode on a workstation
 | `--stats` | off | print frame-time stats once a second |
 
 `Esc`, `q`, `SIGINT` and `SIGTERM` all stop the loop cleanly (exit code 0).
+
+## Dev machine setup
+
+pygame comes from apt on the Pi, so `python3 -m piclock` is the right command
+there. On a workstation it is installed into a venv instead:
+
+```bash
+python3.11 -m venv .venv
+.venv/bin/pip install "pygame>=2.5,<3"
+.venv/bin/python -m piclock --windowed --size 1280x720
+```
+
+**This repo deliberately carries no `.tool-versions`.** If a version manager
+(asdf, mise, pyenv) owns `python3`, a bare `python3 -m piclock` in this
+directory fails before it reaches the code:
+
+```
+No version is set for command python3
+Consider adding one of the following versions in your config file at .../.tool-versions
+```
+
+Pinning an interpreter there would not help: the shimmed interpreter is not the
+one holding pygame, so it would trade that message for `ModuleNotFoundError:
+No module named 'pygame'`. Call the venv interpreter by path — `.venv/bin/python`
+— or `source .venv/bin/activate` first, which puts it ahead of the shim on
+`PATH`. The systemd unit sidesteps the same class of problem by invoking
+`/usr/bin/python3` absolutely.
 
 ## Install on the Pi
 
