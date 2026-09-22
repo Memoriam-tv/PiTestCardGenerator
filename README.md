@@ -8,9 +8,10 @@ Fullscreen broadcast clock for a Raspberry Pi 2 on HDMI, no desktop:
 * round analog clock — 60 tick marks, 12 major marks, dark hour/minute hands
   and a red second hand sweeping once per rendered frame — filling the circle
   in the middle of the card, transparent so a station logo shows through;
-* time-of-day timecode `HH:MM:SS:FF` in the ident bar below the dial, where `FF`
-  advances every rendered frame at **the actual HDMI output rate**, detected at
-  startup — nothing is hardcoded to 25 or 30.
+* time-of-day timecode `HH:MM:SS:FF` on a drawn seven-segment display — lit and
+  unlit segments, leaning digits, square colon dots — stretched across the empty
+  strip of the card below the clock, where `FF` advances every rendered frame at
+  **the actual HDMI output rate**, detected at startup rather than hardcoded.
 
 Everything static is rendered once into one background surface; each frame only
 the hand bounding boxes and the timecode digits are repainted, so a 900 MHz

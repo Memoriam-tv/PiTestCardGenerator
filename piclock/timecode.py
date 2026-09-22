@@ -121,9 +121,10 @@ class SevenSegAtlas(object):
         self.height = int(height)
         self.glyphs = {}
 
-        # Digits fill their cell: the bar spans the card's empty strip and the
-        # display stretches with it.
-        digit_w = self.advance * 0.82
+        # The bar stretches across the card's empty strip, but a digit keeps a
+        # real module's proportions - about twice as tall as wide - and is
+        # centred in its cell, so the display spreads out instead of smearing.
+        digit_w = min(self.advance * 0.74, self.height * 0.56)
         thickness = max(2.0, self.height / 8.0)
         slant = self.height * SLANT
         self.pad = int(math.ceil(slant)) + 2
