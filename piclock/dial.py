@@ -15,10 +15,9 @@ import pygame.gfxdraw
 
 from .layout import Layout
 
-# The dial has no backing of its own: it is drawn straight onto the card's
-# white centre circle, so the markings are dark and their contrast outline is
-# white.
-FACE = (255, 255, 255)
+# The dial has no face of its own: it is drawn straight onto the card, so a
+# logo in the middle of the card shows through.  The markings are dark with a
+# white contrast outline so they read over a logo, over grey and over gratings.
 RING = (25, 25, 25)
 MINOR_TICK = (70, 70, 70)
 MAJOR_TICK = (0, 0, 0)
@@ -27,7 +26,6 @@ HAND_SECOND = (200, 30, 30)
 OUTLINE = (255, 255, 255)
 
 FACE_PAD = 4
-FACE_FIT = 1.02  # white circle painted under the dial, relative to its radius
 
 # (length_f, half_w_f, half_w_min_px, tail_f, colour)
 HOUR = (0.55, 0.030, 3, 0.10, HAND_DARK)

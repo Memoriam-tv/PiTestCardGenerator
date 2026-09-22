@@ -5,9 +5,9 @@ Fullscreen broadcast clock for a Raspberry Pi 2 on HDMI, no desktop:
 * a test card background at the native resolution: either drawn procedurally
   (`--card`: Philips **PM5544** or BBC **Test Card F**) or a ready-made image
   (`--card-image`, e.g. `cards/1080-mtv.png`);
-* round analog clock on a white face — 60 tick marks, 12 major marks, dark
-  hour/minute hands and a red second hand sweeping once per rendered frame —
-  filling the circle in the middle of the card;
+* round analog clock — 60 tick marks, 12 major marks, dark hour/minute hands
+  and a red second hand sweeping once per rendered frame — filling the circle
+  in the middle of the card, transparent so a station logo shows through;
 * time-of-day timecode `HH:MM:SS:FF` in the ident bar below the dial, where `FF`
   advances every rendered frame at **the actual HDMI output rate**, detected at
   startup — nothing is hardcoded to 25 or 30.
@@ -57,11 +57,10 @@ screen — this is how the station card is used:
 The card's own middle circle is measured at startup — 72 rays are cast from the
 image centre until the flat field colour takes over, rays that never reach it
 (white wedges running to the border) or that stop early inside a logo are
-discarded, and the survivors give the centre and radius. That circle is painted
-white, the dial is scaled to fill it, and the timecode bar moves to just below
-it. So a station logo in the middle of the card is replaced by the clock at the
-card's own size, not at the 17 x 13 grid's. If no circle stands out, the drawn
-cards' geometry is kept.
+discarded, and the survivors give the centre and radius. The dial is scaled to
+fill that circle and the timecode bar moves to just below it, so the clock sits
+at the card's own size, not at the 17 x 13 grid's. If no circle stands out, the
+drawn cards' geometry is kept.
 
 The image is scaled once at startup, so its aspect ratio should match the
 output mode. A missing or unreadable file exits with status 2 and
@@ -72,9 +71,10 @@ output mode. A missing or unreadable file exits with status 2 and
 installer copies `cards/` to `/opt/piclock/cards/`. Drop other images there and
 point `ExecStart` at them.
 
-The dial itself has no backing: it is drawn straight onto the white circle, so
-its markings are dark with a white contrast outline. Drawn cards get the same
-white face painted under the dial.
+The dial has no face of its own — nothing is painted under it, so a station
+logo in the middle of the card shows through the clock. That is why the
+markings are dark with a white contrast outline: they stay readable over a
+logo, over grey, and over the gratings of a drawn card.
 
 `Esc`, `q`, `SIGINT` and `SIGTERM` all stop the loop cleanly (exit code 0).
 

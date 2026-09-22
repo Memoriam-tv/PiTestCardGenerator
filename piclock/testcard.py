@@ -342,11 +342,6 @@ def find_centre_circle(surf: pygame.Surface) -> tuple[float, float, float] | Non
     return cx, cy, r
 
 
-def paint_centre(surf: pygame.Surface, cx: float, cy: float, r: float) -> None:
-    """White out the middle of a card so its logo is replaced by the clock."""
-    pygame.draw.circle(surf, WHITE, (int(round(cx)), int(round(cy))), int(round(r)))
-
-
 CARDS = {"pm5544": render_pm5544, "bbc": render_bbc}
 
 
@@ -357,14 +352,14 @@ def render(
 
     ``image`` wins over ``card``: a ready-made card file replaces the drawn one,
     and the returned layout is re-centred on that card's own middle circle so
-    the clock fills it exactly.
+    the clock fills it exactly.  The card is left untouched: the dial is drawn
+    over it, so a logo in the middle shows through the clock.
     """
     if image:
         surf = load_card_image(image, (layout.w, layout.h))
         circle = find_centre_circle(surf)
         if circle is not None:
             layout = layout_mod.with_circle(layout, *circle)
-        paint_centre(surf, layout.cx, layout.cy, layout.card_radius)
         return surf, layout
     try:
         return CARDS[card](layout), layout
