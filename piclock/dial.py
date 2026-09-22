@@ -30,7 +30,7 @@ FACE_PAD = 4
 # (length_f, half_w_f, half_w_min_px, tail_f, colour)
 HOUR = (0.55, 0.030, 3, 0.10, HAND_DARK)
 MINUTE = (0.82, 0.020, 2, 0.12, HAND_DARK)
-SECOND = (0.90, 0.007, 2, 0.20, HAND_SECOND)
+SECOND = (0.90, 0.013, 3, 0.20, HAND_SECOND)
 
 
 def _polar(cx: float, cy: float, r: float, angle_deg: float) -> tuple[float, float]:
