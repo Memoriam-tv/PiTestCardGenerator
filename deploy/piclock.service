@@ -9,7 +9,7 @@ SupplementaryGroups=video render input tty
 Environment=SDL_VIDEODRIVER=kmsdrm
 Environment=PYTHONUNBUFFERED=1
 WorkingDirectory=/opt/piclock
-ExecStart=/usr/bin/python3 -m piclock
+ExecStart=/usr/bin/python3 -m piclock --card-image cards/koekfm-1080.png
 StandardInput=tty
 TTYPath=/dev/tty1
 TTYReset=yes

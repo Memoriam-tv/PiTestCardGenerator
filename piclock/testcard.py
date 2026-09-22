@@ -2,9 +2,18 @@
 
 from __future__ import annotations
 
+import math
+
 import pygame
 
+from . import layout as layout_mod
 from .layout import COLS, ROWS, Layout
+
+# A card image's middle circle is found by walking out from the centre until
+# the flat field colour takes over for FIELD_RUN pixels in a row.
+FIELD_TOL = 18
+FIELD_RUN = 10
+RAY_MIN = 24  # of the 72 rays cast, how many must agree on a circle
 
 GREY = (128, 128, 128)
 WHITE = (255, 255, 255)
@@ -250,12 +259,114 @@ def render_bbc(layout: Layout) -> pygame.Surface:
     return surf
 
 
+def load_card_image(path: str, size: tuple[int, int]) -> pygame.Surface:
+    """Load a ready-made card and scale it to ``size``."""
+    try:
+        img = pygame.image.load(path)
+    except (pygame.error, OSError) as exc:
+        raise ValueError("cannot load card image %r: %s" % (path, exc)) from None
+    if img.get_size() != size:
+        img = pygame.transform.smoothscale(img, size)
+    surf = pygame.Surface(size)
+    surf.blit(img, (0, 0))
+    return surf
+
+
+def _field_colour(surf: pygame.Surface) -> tuple[int, int, int]:
+    """Median colour on a ring well outside the centre: the card's flat field."""
+    w, h = surf.get_size()
+    r = 0.42 * h
+    samples = []
+    for deg in range(0, 360, 5):
+        a = math.radians(deg)
+        x = int(round(w / 2.0 + r * math.sin(a)))
+        y = int(round(h / 2.0 - r * math.cos(a)))
+        if 0 <= x < w and 0 <= y < h:
+            samples.append(surf.get_at((x, y))[:3])
+    if not samples:
+        return (128, 128, 128)
+    return tuple(sorted(s[i] for s in samples)[len(samples) // 2] for i in range(3))
+
+
+def _edge_along(surf, field, cx, cy, dx, dy, limit) -> float | None:
+    """Distance from (cx, cy) at which the field colour takes over for good."""
+    w, h = surf.get_size()
+    run = 0
+    for step in range(8, int(limit)):
+        x = int(round(cx + dx * step))
+        y = int(round(cy + dy * step))
+        if not (0 <= x < w and 0 <= y < h):
+            return float(step - run) if run else None
+        if all(abs(a - b) <= FIELD_TOL for a, b in zip(surf.get_at((x, y))[:3], field)):
+            run += 1
+            if run >= FIELD_RUN:
+                return float(step - run + 1)
+        else:
+            run = 0
+    return None
+
+
+def find_centre_circle(surf: pygame.Surface) -> tuple[float, float, float] | None:
+    """Measure the card's central circle: everything inside it differs from the field.
+
+    Rays are cast every 5 degrees from the image centre.  Rays that never reach
+    the field (they run along a white wedge or a bar all the way to the border)
+    and rays that stop early inside the logo are discarded, then the centre and
+    radius are averaged over the survivors.  Returns ``(cx, cy, r)`` in pixels,
+    or ``None`` when no circle stands out.
+    """
+    w, h = surf.get_size()
+    field = _field_colour(surf)
+    cx0, cy0 = w / 2.0, h / 2.0
+    limit = 0.48 * min(w, h)
+
+    hits = []
+    for deg in range(0, 360, 5):
+        a = math.radians(deg)
+        dx, dy = math.sin(a), -math.cos(a)
+        edge = _edge_along(surf, field, cx0, cy0, dx, dy, limit)
+        if edge is None or edge < 0.05 * h:
+            continue
+        hits.append((edge, (cx0 + dx * edge, cy0 + dy * edge)))
+    if len(hits) < RAY_MIN:
+        return None
+
+    median = sorted(e for e, _ in hits)[len(hits) // 2]
+    keep = [p for e, p in hits if abs(e - median) <= 0.1 * median]
+    if len(keep) < RAY_MIN:
+        return None
+
+    cx = sum(p[0] for p in keep) / len(keep)
+    cy = sum(p[1] for p in keep) / len(keep)
+    r = sum(math.hypot(p[0] - cx, p[1] - cy) for p in keep) / len(keep)
+    return cx, cy, r
+
+
+def paint_centre(surf: pygame.Surface, cx: float, cy: float, r: float) -> None:
+    """White out the middle of a card so its logo is replaced by the clock."""
+    pygame.draw.circle(surf, WHITE, (int(round(cx)), int(round(cy))), int(round(r)))
+
+
 CARDS = {"pm5544": render_pm5544, "bbc": render_bbc}
 
 
-def render(layout: Layout, card: str = "pm5544") -> pygame.Surface:
-    """Return the opaque static background for ``layout`` in style ``card``."""
+def render(
+    layout: Layout, card: str = "pm5544", image: str | None = None
+) -> tuple[pygame.Surface, Layout]:
+    """Return the opaque static background and the layout it was drawn for.
+
+    ``image`` wins over ``card``: a ready-made card file replaces the drawn one,
+    and the returned layout is re-centred on that card's own middle circle so
+    the clock fills it exactly.
+    """
+    if image:
+        surf = load_card_image(image, (layout.w, layout.h))
+        circle = find_centre_circle(surf)
+        if circle is not None:
+            layout = layout_mod.with_circle(layout, *circle)
+        paint_centre(surf, layout.cx, layout.cy, layout.card_radius)
+        return surf, layout
     try:
-        return CARDS[card](layout)
+        return CARDS[card](layout), layout
     except KeyError:
         raise ValueError("unknown card %r, expected one of %s" % (card, sorted(CARDS))) from None

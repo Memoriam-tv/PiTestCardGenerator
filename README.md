@@ -26,6 +26,7 @@ python3 -m piclock                              # on the Pi: fullscreen at the c
 | `--fps N` | auto | override the detected HDMI rate |
 | `--size WxH` | native | force resolution (mode request or window size) |
 | `--card NAME` | `pm5544` | background card style: `pm5544` or `bbc` |
+| `--card-image PATH` | off | use a ready-made card image instead of a drawn one |
 | `--windowed` | off | run in a window instead of fullscreen |
 | `--frames N` | off | exit after N frames |
 | `--dump-frames DIR` | off | save every frame as `frame_%04d.png` |
@@ -41,6 +42,32 @@ python3 -m piclock                              # on the Pi: fullscreen at the c
 
 Test Card F's photograph of Carole Hersee and the clown is not reproduced — the
 clock dial covers that part of the circle anyway.
+
+### Ready-made card image
+
+`--card-image PATH` replaces the drawn card with an image file, scaled to the
+screen — this is how the station card is used:
+
+```bash
+.venv/bin/python -m piclock --windowed --card-image cards/koekfm-1080.png
+```
+
+The card's own middle circle is measured at startup — 72 rays are cast from the
+image centre until the flat field colour takes over, rays that never reach it
+(white wedges running to the border) or that stop early inside a logo are
+discarded, and the survivors give the centre and radius. That circle is painted
+white, the dial is scaled to fill it, and the timecode bar moves to just below
+it. So a station logo in the middle of the card is replaced by the clock at the
+card's own size, not at the 17 x 13 grid's. If no circle stands out, the drawn
+cards' geometry is kept.
+
+The image is scaled once at startup, so its aspect ratio should match the
+output mode. A missing or unreadable file exits with status 2 and
+`piclock: cannot load card image …`.
+
+`cards/koekfm-1080.png` is the card the shipped systemd unit uses; the
+installer copies `cards/` to `/opt/piclock/cards/`. Drop other images there and
+point `ExecStart` at them.
 
 `Esc`, `q`, `SIGINT` and `SIGTERM` all stop the loop cleanly (exit code 0).
 

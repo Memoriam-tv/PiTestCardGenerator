@@ -32,6 +32,12 @@ def parse_args(argv: list[str] | None = None) -> Config:
         default="pm5544",
         help="background test card style (default: pm5544)",
     )
+    p.add_argument(
+        "--card-image",
+        metavar="PATH",
+        default=None,
+        help="use a ready-made card image instead of a drawn card",
+    )
     p.add_argument("--windowed", action="store_true", help="run in a window (dev mode)")
     p.add_argument("--frames", type=int, default=None, help="exit after N frames")
     p.add_argument("--dump-frames", metavar="DIR", default=None, help="save every frame as PNG")
@@ -40,6 +46,7 @@ def parse_args(argv: list[str] | None = None) -> Config:
     a = p.parse_args(argv)
     return Config(
         size=a.size,
+        card_image=a.card_image,
         card=a.card,
         windowed=a.windowed,
         fps=a.fps,
@@ -51,7 +58,11 @@ def parse_args(argv: list[str] | None = None) -> Config:
 
 
 def main(argv: list[str] | None = None) -> int:
-    return run(parse_args(argv))
+    try:
+        return run(parse_args(argv))
+    except ValueError as exc:
+        print("piclock: %s" % exc, file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":

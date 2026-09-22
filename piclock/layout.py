@@ -7,7 +7,7 @@ Other modules MUST take a :class:`Layout` and never recompute ``w / 17``.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import pygame
 
@@ -61,4 +61,32 @@ def compute(size: tuple[int, int]) -> Layout:
         dial_radius=4.55 * ch,
         tc_rect=tc_rect,
         line_w=max(1, int(round(h / 540.0))),
+    )
+
+
+DIAL_FIT = 0.93  # dial radius as a fraction of the circle it sits in
+
+
+def with_circle(layout: Layout, cx: float, cy: float, r: float) -> Layout:
+    """Re-centre the dial on a circle measured somewhere else (a card image).
+
+    The dial fills that circle and the ident bar moves to just below it, so a
+    ready-made card keeps its own geometry instead of the 17 x 13 grid's.
+    """
+    tc_w = 9.0 * layout.cw
+    tc_h = 0.9 * layout.ch
+    tc_top = min(cy + r + 0.15 * layout.ch, layout.h - 1.1 * layout.ch - tc_h)
+    tc_rect = pygame.Rect(
+        int(round(cx - tc_w / 2.0)),
+        int(round(tc_top)),
+        int(round(tc_w)),
+        max(1, int(round(tc_h))),
+    )
+    return replace(
+        layout,
+        cx=cx,
+        cy=cy,
+        card_radius=r,
+        dial_radius=r * DIAL_FIT,
+        tc_rect=tc_rect,
     )

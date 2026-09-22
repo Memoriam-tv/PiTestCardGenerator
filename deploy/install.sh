@@ -15,6 +15,7 @@ apt-get install -y python3-pygame fonts-dejavu-core libegl1 libgles2 libgbm1 rsy
 
 install -d /opt/piclock
 rsync -a --delete "$REPO/piclock" /opt/piclock/
+rsync -a --delete "$REPO/cards" /opt/piclock/
 
 install -m644 "$REPO/deploy/piclock.service" /etc/systemd/system/piclock.service
 systemctl daemon-reload
