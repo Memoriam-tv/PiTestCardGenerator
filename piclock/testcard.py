@@ -340,51 +340,54 @@ def find_centre_circle(surf):
     return cx, cy, r
 
 
-def _is_field(colour, field):
-    return all(abs(a - b) <= FIELD_TOL for a, b in zip(colour, field))
+def _same(a, b):
+    return all(abs(p - q) <= FIELD_TOL for p, q in zip(a, b))
 
 
 def find_ident_band(surf, cx, cy, r):
-    """Tallest run of empty field rows below the circle: where the bar goes.
+    """Tallest plain strip below the circle: where the timecode bar goes.
 
-    Cards leave a plain strip under the picture for the station ident; finding
-    it keeps the timecode off the grid and the patterns.  Returns a
-    ``pygame.Rect`` of the empty area, or ``None`` if the card has no such gap.
+    Cards leave a strip under the picture for the station ident - plain grey on
+    one card, a black slab on the next - so the run is matched on being one
+    flat colour, whatever that colour is, rather than on matching the field.
+    Returns a ``pygame.Rect`` of the strip, or ``None`` if the card has none.
     """
     w, h = surf.get_size()
-    field = _field_colour(surf)
     probe0 = int(max(0, cx - 0.22 * w))
     probe1 = int(min(w, cx + 0.22 * w))
 
-    def empty(y):
+    def row_colour(y):
+        """The row's colour across the probe span, or None if it is not plain."""
+        first = surf.get_at((probe0, y))[:3]
         for x in range(probe0, probe1, 8):
-            if not _is_field(surf.get_at((x, y))[:3], field):
-                return False
-        return True
+            if not _same(surf.get_at((x, y))[:3], first):
+                return None
+        return first
 
     runs = []
     start = None
+    colour = None
     for y in range(int(cy + r) + 2, h):
-        if empty(y):
-            if start is None:
-                start = y
-        elif start is not None:
-            runs.append((start, y - 1))
-            start = None
+        here = row_colour(y)
+        if here is not None and start is not None and _same(here, colour):
+            continue
+        if start is not None:
+            runs.append((start, y - 1, colour))
+        start, colour = (y, here) if here is not None else (None, None)
     if start is not None:
-        runs.append((start, h - 1))
+        runs.append((start, h - 1, colour))
 
     runs = [run for run in runs if run[1] - run[0] >= 0.02 * h]
     if not runs:
         return None
-    top, bottom = max(runs, key=lambda run: run[1] - run[0])
+    top, bottom, colour = max(runs, key=lambda run: run[1] - run[0])
 
     mid = (top + bottom) // 2
     left = int(cx)
-    while left > 0 and _is_field(surf.get_at((left - 1, mid))[:3], field):
+    while left > 0 and _same(surf.get_at((left - 1, mid))[:3], colour):
         left -= 1
     right = int(cx)
-    while right < w - 1 and _is_field(surf.get_at((right + 1, mid))[:3], field):
+    while right < w - 1 and _same(surf.get_at((right + 1, mid))[:3], colour):
         right += 1
     return pygame.Rect(left, top, right - left, bottom - top)
 
