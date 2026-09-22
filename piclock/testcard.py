@@ -340,6 +340,55 @@ def find_centre_circle(surf):
     return cx, cy, r
 
 
+def _is_field(colour, field):
+    return all(abs(a - b) <= FIELD_TOL for a, b in zip(colour, field))
+
+
+def find_ident_band(surf, cx, cy, r):
+    """Tallest run of empty field rows below the circle: where the bar goes.
+
+    Cards leave a plain strip under the picture for the station ident; finding
+    it keeps the timecode off the grid and the patterns.  Returns a
+    ``pygame.Rect`` of the empty area, or ``None`` if the card has no such gap.
+    """
+    w, h = surf.get_size()
+    field = _field_colour(surf)
+    probe0 = int(max(0, cx - 0.22 * w))
+    probe1 = int(min(w, cx + 0.22 * w))
+
+    def empty(y):
+        for x in range(probe0, probe1, 8):
+            if not _is_field(surf.get_at((x, y))[:3], field):
+                return False
+        return True
+
+    runs = []
+    start = None
+    for y in range(int(cy + r) + 2, h):
+        if empty(y):
+            if start is None:
+                start = y
+        elif start is not None:
+            runs.append((start, y - 1))
+            start = None
+    if start is not None:
+        runs.append((start, h - 1))
+
+    runs = [run for run in runs if run[1] - run[0] >= 0.02 * h]
+    if not runs:
+        return None
+    top, bottom = max(runs, key=lambda run: run[1] - run[0])
+
+    mid = (top + bottom) // 2
+    left = int(cx)
+    while left > 0 and _is_field(surf.get_at((left - 1, mid))[:3], field):
+        left -= 1
+    right = int(cx)
+    while right < w - 1 and _is_field(surf.get_at((right + 1, mid))[:3], field):
+        right += 1
+    return pygame.Rect(left, top, right - left, bottom - top)
+
+
 CARDS = {"pm5544": render_pm5544, "bbc": render_bbc}
 
 
@@ -347,15 +396,19 @@ def render(layout, card="pm5544", image=None):
     """Return the opaque static background and the layout it was drawn for.
 
     ``image`` wins over ``card``: a ready-made card file replaces the drawn one,
-    and the returned layout is re-centred on that card's own middle circle so
-    the clock fills it exactly.  The card is left untouched: the dial is drawn
-    over it, so a logo in the middle shows through the clock.
+    and the returned layout is re-centred on that card's own middle circle, with
+    the timecode bar dropped into the empty strip below it.  The card itself is
+    left untouched: the dial is drawn over it, so a logo in the middle shows
+    through the clock.
     """
     if image:
         surf = load_card_image(image, (layout.w, layout.h))
         circle = find_centre_circle(surf)
         if circle is not None:
             layout = layout_mod.with_circle(layout, *circle)
+            band = find_ident_band(surf, *circle)
+            if band is not None:
+                layout = layout_mod.with_ident_band(layout, band)
         return surf, layout
     try:
         return CARDS[card](layout), layout

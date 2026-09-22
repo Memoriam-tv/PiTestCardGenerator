@@ -73,8 +73,8 @@ class _Stop(object):
 
 def setup_display(cfg):
     """Open the display; fullscreen unless --windowed."""
+    # No pygame.font: the timecode is drawn as seven-segment polygons.
     pygame.display.init()
-    pygame.font.init()
 
     if cfg.windowed:
         size = cfg.size or (1280, 720)
@@ -191,8 +191,7 @@ def run(cfg):
         flush=True,
     )
 
-    font = timecode.fit_font(lay.tc_rect.w - 8, lay.tc_rect.h - 6)
-    atlas = timecode.DigitAtlas(font)
+    atlas = timecode.fit_atlas(lay.tc_rect.w - 8, lay.tc_rect.h - 6)
     tc_text_rect = atlas.text_rect("00:00:00:00", lay.tc_rect).inflate(8, 8)
 
     if cfg.dump_frames:
