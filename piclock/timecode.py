@@ -14,12 +14,11 @@ import time
 
 import pygame
 
-from .layout import TC_CELL_ASPECT as CELL_ASPECT
-
 DIGITS = "0123456789:"
 
 LIT = (255, 72, 48)  # lit segment, red LED
 DIM = (48, 14, 10)  # unlit segment, just visible against the black bar
+BG = (0, 0, 0)  # the ident bar the glyphs are blitted onto
 
 # Which of the seven segments each glyph lights.
 #   A top, B upper right, C lower right, D bottom, E lower left, F upper left,
@@ -117,14 +116,14 @@ class SevenSegAtlas(object):
     cell and the dirty rect stays the same every frame.
     """
 
-    def __init__(self, advance, height, lit=LIT, dim=DIM):
+    def __init__(self, advance, height, lit=LIT, dim=DIM, bg=BG):
         self.advance = int(advance)
         self.height = int(height)
         self.glyphs = {}
 
-        # A seven-segment digit is about twice as tall as it is wide; in a wide
-        # bar the cell is much wider than that, so the glyph is centred in it.
-        digit_w = min(self.advance * 0.74, self.height * 0.56)
+        # Digits fill their cell: the bar spans the card's empty strip and the
+        # display stretches with it.
+        digit_w = self.advance * 0.82
         thickness = max(2.0, self.height / 8.0)
         slant = self.height * SLANT
         self.pad = int(math.ceil(slant)) + 2
@@ -133,7 +132,11 @@ class SevenSegAtlas(object):
         shapes = _segment_shapes(digit_w, float(self.height), thickness)
 
         for ch in DIGITS:
-            surf = pygame.Surface((self.advance + self.pad, self.height), pygame.SRCALPHA)
+            # Opaque, not SRCALPHA: the glyphs land on the black ident bar, so
+            # carrying its colour turns eleven alpha blends per frame into
+            # eleven straight copies.
+            surf = pygame.Surface((self.advance + self.pad, self.height))
+            surf.fill(bg)
             if ch == ":":
                 self._draw_colon(surf, digit_w, thickness)
             else:
@@ -182,10 +185,6 @@ class SevenSegAtlas(object):
 
 
 def fit_atlas(max_w, max_h, cells=11):
-    """Largest seven-segment display that fits ``cells`` glyphs in the bar."""
+    """Seven-segment display filling the bar: ``cells`` across, as tall as fits."""
     advance = max(6, int(max_w // cells))
-    height = int(min(max_h, advance * 1.85))
-    # Never stretch the cells wider than a real module's: a short wide bar caps
-    # the height, and the cells must follow it instead of smearing sideways.
-    advance = max(6, min(advance, int(height * CELL_ASPECT)))
-    return SevenSegAtlas(advance, height)
+    return SevenSegAtlas(advance, max(6, int(max_h)))
