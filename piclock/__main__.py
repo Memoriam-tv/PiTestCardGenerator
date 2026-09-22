@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from .app import Config, run
+from .app import DEFAULT_CARD_IMAGE, Config, run
 from .testcard import CARDS
 
 
@@ -29,14 +29,14 @@ def parse_args(argv: list[str] | None = None) -> Config:
     p.add_argument(
         "--card",
         choices=sorted(CARDS),
-        default="pm5544",
-        help="background test card style (default: pm5544)",
+        default=None,
+        help="draw a card instead of the shipped image: %s" % ", ".join(sorted(CARDS)),
     )
     p.add_argument(
         "--card-image",
         metavar="PATH",
         default=None,
-        help="use a ready-made card image instead of a drawn card",
+        help="use another card image (default: %s)" % DEFAULT_CARD_IMAGE,
     )
     p.add_argument("--windowed", action="store_true", help="run in a window (dev mode)")
     p.add_argument("--frames", type=int, default=None, help="exit after N frames")
@@ -44,10 +44,14 @@ def parse_args(argv: list[str] | None = None) -> Config:
     p.add_argument("--log-tc", action="store_true", help="print the timecode of every frame")
     p.add_argument("--stats", action="store_true", help="print frame-time stats each second")
     a = p.parse_args(argv)
+    # Bare invocation gets the shipped card image; naming a drawn card opts out.
+    image = a.card_image
+    if image is None and a.card is None:
+        image = DEFAULT_CARD_IMAGE
     return Config(
         size=a.size,
-        card_image=a.card_image,
-        card=a.card,
+        card_image=image,
+        card=a.card or "pm5544",
         windowed=a.windowed,
         fps=a.fps,
         frames=a.frames,

@@ -8,6 +8,7 @@ import signal
 import statistics
 import time
 from dataclasses import dataclass
+from pathlib import Path
 
 import pygame
 
@@ -37,6 +38,9 @@ PROBE_DISCARD = 10
 
 IDENT_BG = (0, 0, 0)
 IDENT_BORDER = (255, 255, 255)
+
+# Shipped card, resolved next to the package so it is found from any cwd.
+DEFAULT_CARD_IMAGE = str(Path(__file__).resolve().parent.parent / "cards" / "1080-mtv.png")
 
 
 @dataclass

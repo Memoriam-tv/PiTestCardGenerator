@@ -27,8 +27,8 @@ python3 -m piclock                              # on the Pi: fullscreen at the c
 |---|---|---|
 | `--fps N` | auto | override the detected HDMI rate |
 | `--size WxH` | native | force resolution (mode request or window size) |
-| `--card NAME` | `pm5544` | background card style: `pm5544` or `bbc` |
-| `--card-image PATH` | off | use a ready-made card image instead of a drawn one |
+| `--card NAME` | off | draw a card instead of the shipped image: `pm5544` or `bbc` |
+| `--card-image PATH` | `cards/1080-mtv.png` | use another card image |
 | `--windowed` | off | run in a window instead of fullscreen |
 | `--frames N` | off | exit after N frames |
 | `--dump-frames DIR` | off | save every frame as `frame_%04d.png` |
@@ -39,19 +39,23 @@ python3 -m piclock                              # on the Pi: fullscreen at the c
 
 | `--card` | contents |
 |---|---|
-| `pm5544` (default) | white 17 x 13 grid over grey, castellated border, greyscale staircase, 75 % EBU colour bars, five definition gratings, centre circle |
+| `pm5544` | white 17 x 13 grid over grey, castellated border, greyscale staircase, 75 % EBU colour bars, five definition gratings, centre circle |
 | `bbc` | Test Card F style: plain grey field, 95 % colour bars in descending luminance along the top, grey scale down the left of the circle, 1.5 – 5.25 MHz frequency-response gratings down the right, castellations with an overscan triangle at the middle of each edge, black-bar-on-white ringing patches flanking the ident box |
 
-Test Card F's photograph of Carole Hersee and the clown is not reproduced — the
-clock dial covers that part of the circle anyway.
+Test Card F's photograph of Carole Hersee and the clown is not reproduced; the
+clock sits in the circle where it was.
 
 ### Ready-made card image
 
-`--card-image PATH` replaces the drawn card with an image file, scaled to the
-screen — this is how the station card is used:
+With no flags piclock uses `cards/1080-mtv.png`, resolved next to the package,
+so a bare `python3 -m piclock` shows the station card from any working
+directory. `--card-image PATH` picks another image; `--card NAME` opts out of
+images entirely and draws one instead:
 
 ```bash
-.venv/bin/python -m piclock --windowed --card-image cards/1080-mtv.png
+.venv/bin/python -m piclock --windowed                              # shipped station card
+.venv/bin/python -m piclock --windowed --card-image cards/koekfm-1080.png
+.venv/bin/python -m piclock --windowed --card pm5544                # drawn, no image
 ```
 
 The card's own middle circle is measured at startup — 72 rays are cast from the
@@ -66,10 +70,10 @@ The image is scaled once at startup, so its aspect ratio should match the
 output mode. A missing or unreadable file exits with status 2 and
 `piclock: cannot load card image …`.
 
-`cards/1080-mtv.png` is the card the shipped systemd unit uses;
 `cards/koekfm-1080.png` is the same card with the other station logo. The
-installer copies `cards/` to `/opt/piclock/cards/`. Drop other images there and
-point `ExecStart` at them.
+installer copies `cards/` to `/opt/piclock/cards/`, where the default resolves
+to `/opt/piclock/cards/1080-mtv.png`. Drop other images there and point
+`--card-image` at them.
 
 The dial has no face of its own — nothing is painted under it, so a station
 logo in the middle of the card shows through the clock. That is why the
