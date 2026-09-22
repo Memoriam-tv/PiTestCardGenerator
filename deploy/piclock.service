@@ -1,0 +1,22 @@
+[Unit]
+Description=piclock broadcast clock
+After=multi-user.target systemd-user-sessions.service
+
+[Service]
+Type=simple
+User=pi
+SupplementaryGroups=video render input tty
+Environment=SDL_VIDEODRIVER=kmsdrm
+Environment=PYTHONUNBUFFERED=1
+WorkingDirectory=/opt/piclock
+ExecStart=/usr/bin/python3 -m piclock
+StandardInput=tty
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+TTYVTDisallocate=yes
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
