@@ -1,4 +1,4 @@
-# piclock
+# Raspberry Pi Testcard generator
 
 ![piclock running on the Pi](docs/screenshot.png)
 
