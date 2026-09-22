@@ -34,7 +34,6 @@ PROBE_FRAMES = 40
 PROBE_DISCARD = 10
 
 IDENT_BG = (0, 0, 0)
-IDENT_BORDER = (255, 255, 255)
 
 # Shipped card, resolved next to the package so it is found from any cwd.
 DEFAULT_CARD_IMAGE = str(Path(__file__).resolve().parent.parent / "cards" / "1080-mtv.png")
@@ -154,7 +153,6 @@ def build_background(lay, card="pm5544", image=None):
     face, topleft = dial.render_face(lay)
     background.blit(face, topleft)
     background.fill(IDENT_BG, lay.tc_rect)
-    pygame.draw.rect(background, IDENT_BORDER, lay.tc_rect, 2)
     # Blitting the translucent dial disc leaves zero alpha behind in the
     # 32-bit background.  The scanout ignores alpha, but pygame.image.save and
     # any compositing X server do not, so force the whole surface opaque once.
