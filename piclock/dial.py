@@ -15,19 +15,23 @@ import pygame.gfxdraw
 
 from .layout import Layout
 
-DISC = (0, 0, 0, 160)
-RING = (255, 255, 255)
-MINOR_TICK = (235, 235, 235)
-MAJOR_TICK = (255, 255, 255)
-HAND_LIGHT = (245, 245, 245)
-HAND_SECOND = (220, 40, 40)
-OUTLINE = (0, 0, 0)
+# The dial has no backing of its own: it is drawn straight onto the card's
+# white centre circle, so the markings are dark and their contrast outline is
+# white.
+FACE = (255, 255, 255)
+RING = (25, 25, 25)
+MINOR_TICK = (70, 70, 70)
+MAJOR_TICK = (0, 0, 0)
+HAND_DARK = (20, 20, 20)
+HAND_SECOND = (200, 30, 30)
+OUTLINE = (255, 255, 255)
 
 FACE_PAD = 4
+FACE_FIT = 1.02  # white circle painted under the dial, relative to its radius
 
 # (length_f, half_w_f, half_w_min_px, tail_f, colour)
-HOUR = (0.55, 0.030, 3, 0.10, HAND_LIGHT)
-MINUTE = (0.82, 0.020, 2, 0.12, HAND_LIGHT)
+HOUR = (0.55, 0.030, 3, 0.10, HAND_DARK)
+MINUTE = (0.82, 0.020, 2, 0.12, HAND_DARK)
 SECOND = (0.90, 0.007, 2, 0.20, HAND_SECOND)
 
 
@@ -43,7 +47,6 @@ def render_face(layout: Layout) -> tuple[pygame.Surface, tuple[int, int]]:
     surf = pygame.Surface((size, size), pygame.SRCALPHA)
     c = size / 2.0
 
-    pygame.draw.circle(surf, DISC, (int(round(c)), int(round(c))), int(round(r)))
     pygame.draw.circle(
         surf,
         RING,
@@ -145,7 +148,7 @@ def draw_hands(dest: pygame.Surface, layout: Layout, now: float) -> list[pygame.
     cx, cy = int(round(layout.cx)), int(round(layout.cy))
     hub_r = max(4, int(round(0.035 * r)))
     pin_r = max(2, int(round(0.015 * r)))
-    pygame.draw.circle(dest, (255, 255, 255), (cx, cy), hub_r)
+    pygame.draw.circle(dest, HAND_DARK, (cx, cy), hub_r)
     pygame.draw.circle(dest, HAND_SECOND, (cx, cy), pin_r)
     rects.append(pygame.Rect(cx - hub_r, cy - hub_r, 2 * hub_r, 2 * hub_r).inflate(12, 12))
 

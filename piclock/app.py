@@ -133,6 +133,14 @@ def build_background(
     circle the dial has to fill.
     """
     background, lay = testcard.render(lay, card, image)
+    # The dial has no backing of its own; drawn cards get the same white face
+    # that a card image's centre circle already provides.
+    pygame.draw.circle(
+        background,
+        dial.FACE,
+        (int(round(lay.cx)), int(round(lay.cy))),
+        int(round(lay.dial_radius * dial.FACE_FIT)),
+    )
     face, topleft = dial.render_face(lay)
     background.blit(face, topleft)
     background.fill(IDENT_BG, lay.tc_rect)

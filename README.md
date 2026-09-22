@@ -2,10 +2,12 @@
 
 Fullscreen broadcast clock for a Raspberry Pi 2 on HDMI, no desktop:
 
-* a procedurally drawn test card background at the native resolution, in one of
-  two styles (`--card`): Philips **PM5544** or BBC **Test Card F**;
-* round analog clock — 60 tick marks, 12 major marks, hour/minute/second hands —
-  centred on the card circle, second hand sweeping once per rendered frame;
+* a test card background at the native resolution: either drawn procedurally
+  (`--card`: Philips **PM5544** or BBC **Test Card F**) or a ready-made image
+  (`--card-image`, e.g. `cards/1080-mtv.png`);
+* round analog clock on a white face — 60 tick marks, 12 major marks, dark
+  hour/minute hands and a red second hand sweeping once per rendered frame —
+  filling the circle in the middle of the card;
 * time-of-day timecode `HH:MM:SS:FF` in the ident bar below the dial, where `FF`
   advances every rendered frame at **the actual HDMI output rate**, detected at
   startup — nothing is hardcoded to 25 or 30.
@@ -49,7 +51,7 @@ clock dial covers that part of the circle anyway.
 screen — this is how the station card is used:
 
 ```bash
-.venv/bin/python -m piclock --windowed --card-image cards/koekfm-1080.png
+.venv/bin/python -m piclock --windowed --card-image cards/1080-mtv.png
 ```
 
 The card's own middle circle is measured at startup — 72 rays are cast from the
@@ -65,9 +67,14 @@ The image is scaled once at startup, so its aspect ratio should match the
 output mode. A missing or unreadable file exits with status 2 and
 `piclock: cannot load card image …`.
 
-`cards/koekfm-1080.png` is the card the shipped systemd unit uses; the
+`cards/1080-mtv.png` is the card the shipped systemd unit uses;
+`cards/koekfm-1080.png` is the same card with the other station logo. The
 installer copies `cards/` to `/opt/piclock/cards/`. Drop other images there and
 point `ExecStart` at them.
+
+The dial itself has no backing: it is drawn straight onto the white circle, so
+its markings are dark with a white contrast outline. Drawn cards get the same
+white face painted under the dial.
 
 `Esc`, `q`, `SIGINT` and `SIGTERM` all stop the loop cleanly (exit code 0).
 
