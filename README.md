@@ -1,6 +1,10 @@
 # piclock
 
-Fullscreen broadcast clock for a Raspberry Pi 2 on HDMI, no desktop:
+![piclock running on the Pi](docs/screenshot.png)
+
+*Straight off the Pi: `/dev/fb0` grabbed while the service was running.*
+
+Fullscreen broadcast clock for a Raspberry Pi on HDMI, no desktop:
 
 * a test card background at the native resolution: either drawn procedurally
   (`--card`: Philips **PM5544** or BBC **Test Card F**) or a ready-made image
@@ -14,8 +18,8 @@ Fullscreen broadcast clock for a Raspberry Pi 2 on HDMI, no desktop:
   **the actual HDMI output rate**, detected at startup rather than hardcoded.
 
 Everything static is rendered once into one background surface; each frame only
-the hand bounding boxes and the timecode digits are repainted, so a 900 MHz
-Cortex-A7 keeps up at 1080p.
+the hand bounding boxes and the timecode digits are repainted, which is what
+keeps a 700 MHz ARM11 Pi 1 inside its frame budget at 1080p.
 
 ## Run
 
