@@ -111,30 +111,40 @@ No module named 'pygame'`. Call the venv interpreter by path — `.venv/bin/pyth
 
 ## Install on the Pi
 
-Dependencies come from apt — pygame is never built from source on a Pi 2:
-
-```bash
-sudo apt-get install -y python3-pygame fonts-dejavu-core libegl1 libgles2 libgbm1
-```
-
-Then, from a checkout of this repo on the Pi:
+The deployed box is a **Raspberry Pi 1 Model B** (ARMv6, 181 MB RAM) running
+**Raspbian jessie**, where the newest usable stack is **Python 3.4 + pygame
+1.9.2 on SDL 1.2**. The whole package is written to that floor: no dataclasses,
+no f-strings, no variable annotations, no SDL2-only calls. Keep it that way, or
+the Pi stops booting the clock.
 
 ```bash
 sudo bash deploy/install.sh
 ```
 
-That copies the package to `/opt/piclock`, installs
-`/etc/systemd/system/piclock.service` (runs as `pi` on tty1 with
-`SDL_VIDEODRIVER=kmsdrm`) and starts it. Check with `systemctl status piclock`.
+That installs `python3 python3-pygame fonts-dejavu-core rsync` (retrying
+unauthenticated, because jessie's Release files have expired), copies the
+package and `cards/` to `/opt/piclock`, installs
+`/etc/systemd/system/piclock.service` and starts it. Check with
+`systemctl status piclock`.
 
-### Three manual system tweaks
+jessie's apt mirrors have moved: `/etc/apt/sources.list` must point at
+`http://legacy.raspbian.org/raspbian/ jessie main contrib non-free rpi`, not at
+`mirrordirector.raspbian.org`, which still serves indexes but 404s on every
+`.deb`.
+
+The unit takes over tty1: it `Conflicts=getty@tty1.service` (without that the
+getty's vhangup kills the clock with SIGHUP), runs SDL on the framebuffer with
+`SDL_VIDEODRIVER=fbcon`, and logs to the journal rather than to the console it
+is drawing on.
+
+### Manual system tweaks
 
 1. **Boot to console, no desktop:** `sudo raspi-config nonint do_boot_behaviour B1`
-2. **KMS driver:** `/boot/firmware/config.txt` must contain `dtoverlay=vc4-kms-v3d`
-   (the Bookworm default). If SDL cannot open a DRM device, try
-   `dtoverlay=vc4-fkms-v3d`.
-3. **No console blanking:** append `consoleblank=0` to `/boot/firmware/cmdline.txt`
-   (one line, space separated), so DPMS never blanks the HDMI output.
+2. **No console blanking:** append `consoleblank=0` to the kernel command line
+   (`/boot/cmdline.txt` on jessie, `/boot/firmware/cmdline.txt` on bookworm), so
+   nothing blanks the HDMI output.
+3. **SDL2 targets only** (bookworm and newer): `dtoverlay=vc4-kms-v3d` in
+   `config.txt` and `SDL_VIDEODRIVER=kmsdrm` in the unit instead of `fbcon`.
 
 Also set the clock source, because both the dial and the timecode are local time
 on a board without an RTC:
@@ -146,12 +156,18 @@ sudo timedatectl set-ntp true
 
 ## Notes
 
-* Tested against pygame 2 / SDL 2. Only APIs present in the Bookworm apt package
-  (pygame 2.1.2) are used; `pygame.display.get_current_refresh_rate` is probed
-  with `getattr` and simply absent there.
+* Runs on pygame 1.9/SDL 1.2 (jessie) and pygame 2/SDL 2 (workstation venv).
+  `vsync=1` is attempted and the `TypeError`/`pygame.error` from pygame 1.9 is
+  caught; `pygame.display.get_current_refresh_rate` is probed with `getattr`.
+  Fullscreen size comes from `pygame.display.Info()` because SDL 1.2 will not
+  size a mode from `(0, 0)`.
 * Rate detection order: `--fps`, then the pygame-ce refresh-rate API if present,
-  then a 40-flip measurement snapped to the nearest standard rate (KMSDRM
-  page-flips are vblank-synced, so this measures the real HDMI mode), then 25.
-* If `max frame ms` reported by `--stats` exceeds the frame budget at 1080p, add
-  `--size 1280x720` to `ExecStart` in the unit. Do not reintroduce full-screen
-  repaints or `pygame.transform.rotate`.
+  then a 40-flip measurement snapped to the nearest standard rate, then 25.
+  SDL 1.2 on the framebuffer does not sync flips to vblank, so on the Pi 1 the
+  measurement reports the blit rate (~16 Hz at 1080p), nothing snaps, and the
+  clock runs at the 25 fps fallback paced against the wall clock. Every rendered
+  frame still gets its own `FF`.
+* Measured on the Pi 1 at 1920×1080: **avg 23–24 ms, max 25 ms** per frame
+  against a 40 ms budget. If a slower card or a busier dial pushes that over,
+  add `--size 1280x720` to `ExecStart`. Do not reintroduce full-screen repaints
+  or `pygame.transform.rotate`.

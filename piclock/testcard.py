@@ -1,7 +1,5 @@
 """Static test card backgrounds: Philips PM5544 and BBC Test Card F styles."""
 
-from __future__ import annotations
-
 import math
 
 import pygame
@@ -37,7 +35,7 @@ BARS = (
 GRATING_F = (3, 5, 8, 12, 18)
 
 
-def _row_span(layout: Layout, row: int) -> tuple[int, int, int, int]:
+def _row_span(layout, row):
     """Pixel rect of interior grid row ``row``, spanning cols 1..16."""
     x0 = int(round(1.0 * layout.cw))
     x1 = int(round(16.0 * layout.cw))
@@ -46,7 +44,7 @@ def _row_span(layout: Layout, row: int) -> tuple[int, int, int, int]:
     return x0, y0, x1 - x0, y1 - y0
 
 
-def _draw_grid(surf: pygame.Surface, layout: Layout) -> None:
+def _draw_grid(surf, layout):
     lw = layout.line_w
     for col in range(COLS + 1):
         x = int(round(col * layout.cw)) - lw // 2
@@ -56,7 +54,7 @@ def _draw_grid(surf: pygame.Surface, layout: Layout) -> None:
         surf.fill(WHITE, pygame.Rect(0, y, layout.w, lw))
 
 
-def _draw_castellations(surf: pygame.Surface, layout: Layout) -> None:
+def _draw_castellations(surf, layout):
     for row in range(ROWS):
         for col in range(COLS):
             if not (row in (0, ROWS - 1) or col in (0, COLS - 1)):
@@ -69,7 +67,7 @@ def _draw_castellations(surf: pygame.Surface, layout: Layout) -> None:
             surf.fill(colour, pygame.Rect(x0, y0, x1 - x0, y1 - y0))
 
 
-def _draw_steps(surf: pygame.Surface, layout: Layout, row: int, levels) -> None:
+def _draw_steps(surf, layout, row, levels):
     x, y, w, h = _row_span(layout, row)
     n = len(levels)
     for i, level in enumerate(levels):
@@ -79,7 +77,7 @@ def _draw_steps(surf: pygame.Surface, layout: Layout, row: int, levels) -> None:
         surf.fill(colour, pygame.Rect(sx0, y, sx1 - sx0, h))
 
 
-def _draw_gratings(surf: pygame.Surface, layout: Layout, row: int) -> None:
+def _draw_gratings(surf, layout, row):
     x, y, w, h = _row_span(layout, row)
     n = len(GRATING_F)
     for i, f in enumerate(GRATING_F):
@@ -94,7 +92,7 @@ def _draw_gratings(surf: pygame.Surface, layout: Layout, row: int) -> None:
             sx += period
 
 
-def _draw_ring(surf: pygame.Surface, layout: Layout) -> None:
+def _draw_ring(surf, layout):
     pygame.draw.circle(
         surf,
         WHITE,
@@ -104,7 +102,7 @@ def _draw_ring(surf: pygame.Surface, layout: Layout) -> None:
     )
 
 
-def render_pm5544(layout: Layout) -> pygame.Surface:
+def render_pm5544(layout):
     """Philips PM5544: white 17x13 grid over grey, patterns on whole rows."""
     surf = pygame.Surface((layout.w, layout.h))
     surf.fill(GREY)
@@ -145,7 +143,7 @@ BBC_BARS = (
 BBC_GRATING_F = (3, 5, 8, 10, 13, 18)
 
 
-def _fill_span(surf: pygame.Surface, span, y: int, h: int, colours) -> None:
+def _fill_span(surf, span, y, h, colours):
     """Split a horizontal span into equal blocks of ``colours``."""
     x0, x1 = span
     n = len(colours)
@@ -155,7 +153,7 @@ def _fill_span(surf: pygame.Surface, span, y: int, h: int, colours) -> None:
         surf.fill(colour, pygame.Rect(sx0, y, sx1 - sx0, h))
 
 
-def _margins(layout: Layout) -> tuple[int, int, int, int]:
+def _margins(layout):
     """Picture area inside the castellations, and the free columns beside the circle."""
     x_left = int(round(layout.cw))
     x_right = int(round(16.0 * layout.cw))
@@ -168,7 +166,7 @@ def _margins(layout: Layout) -> tuple[int, int, int, int]:
     )
 
 
-def _stack_steps(surf: pygame.Surface, rect: pygame.Rect, levels) -> None:
+def _stack_steps(surf, rect, levels):
     n = len(levels)
     for i, level in enumerate(levels):
         y0 = rect.y + int(round(i * rect.h / n))
@@ -176,7 +174,7 @@ def _stack_steps(surf: pygame.Surface, rect: pygame.Rect, levels) -> None:
         surf.fill((level, level, level), pygame.Rect(rect.x, y0, rect.w, y1 - y0))
 
 
-def _stack_gratings(surf: pygame.Surface, layout: Layout, rect: pygame.Rect, freqs) -> None:
+def _stack_gratings(surf, layout, rect, freqs):
     n = len(freqs)
     for i, f in enumerate(freqs):
         y0 = rect.y + int(round(i * rect.h / n))
@@ -190,7 +188,7 @@ def _stack_gratings(surf: pygame.Surface, layout: Layout, rect: pygame.Rect, fre
             x += period
 
 
-def _draw_overscan_triangles(surf: pygame.Surface, layout: Layout) -> None:
+def _draw_overscan_triangles(surf, layout):
     """Black arrow in the middle castellation of each edge; all four are white."""
     cw, ch = layout.cw, layout.ch
     mid_col, mid_row = COLS // 2, ROWS // 2
@@ -214,7 +212,7 @@ def _draw_overscan_triangles(surf: pygame.Surface, layout: Layout) -> None:
         pygame.draw.polygon(surf, BLACK, [(int(round(x)), int(round(y))) for x, y in tri])
 
 
-def _draw_ringing_patch(surf: pygame.Surface, rect: pygame.Rect) -> None:
+def _draw_ringing_patch(surf, rect):
     """Black bar on white: shows ringing and reflections."""
     if rect.w < 8 or rect.h < 6:
         return
@@ -223,7 +221,7 @@ def _draw_ringing_patch(surf: pygame.Surface, rect: pygame.Rect) -> None:
     surf.fill(BLACK, pygame.Rect(rect.x, rect.centery - bar_h // 2, rect.w, bar_h))
 
 
-def render_bbc(layout: Layout) -> pygame.Surface:
+def render_bbc(layout):
     """BBC Test Card F style: plain grey field, circle, bars along the top."""
     surf = pygame.Surface((layout.w, layout.h))
     surf.fill(GREY)
@@ -259,7 +257,7 @@ def render_bbc(layout: Layout) -> pygame.Surface:
     return surf
 
 
-def load_card_image(path: str, size: tuple[int, int]) -> pygame.Surface:
+def load_card_image(path, size):
     """Load a ready-made card and scale it to ``size``."""
     try:
         img = pygame.image.load(path)
@@ -272,7 +270,7 @@ def load_card_image(path: str, size: tuple[int, int]) -> pygame.Surface:
     return surf
 
 
-def _field_colour(surf: pygame.Surface) -> tuple[int, int, int]:
+def _field_colour(surf):
     """Median colour on a ring well outside the centre: the card's flat field."""
     w, h = surf.get_size()
     r = 0.42 * h
@@ -288,7 +286,7 @@ def _field_colour(surf: pygame.Surface) -> tuple[int, int, int]:
     return tuple(sorted(s[i] for s in samples)[len(samples) // 2] for i in range(3))
 
 
-def _edge_along(surf, field, cx, cy, dx, dy, limit) -> float | None:
+def _edge_along(surf, field, cx, cy, dx, dy, limit):
     """Distance from (cx, cy) at which the field colour takes over for good."""
     w, h = surf.get_size()
     run = 0
@@ -306,7 +304,7 @@ def _edge_along(surf, field, cx, cy, dx, dy, limit) -> float | None:
     return None
 
 
-def find_centre_circle(surf: pygame.Surface) -> tuple[float, float, float] | None:
+def find_centre_circle(surf):
     """Measure the card's central circle: everything inside it differs from the field.
 
     Rays are cast every 5 degrees from the image centre.  Rays that never reach
@@ -345,9 +343,7 @@ def find_centre_circle(surf: pygame.Surface) -> tuple[float, float, float] | Non
 CARDS = {"pm5544": render_pm5544, "bbc": render_bbc}
 
 
-def render(
-    layout: Layout, card: str = "pm5544", image: str | None = None
-) -> tuple[pygame.Surface, Layout]:
+def render(layout, card="pm5544", image=None):
     """Return the opaque static background and the layout it was drawn for.
 
     ``image`` wins over ``card``: a ready-made card file replaces the drawn one,

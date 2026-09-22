@@ -1,7 +1,5 @@
 """Command line entrypoint: ``python3 -m piclock``."""
 
-from __future__ import annotations
-
 import argparse
 import sys
 
@@ -9,7 +7,7 @@ from .app import DEFAULT_CARD_IMAGE, Config, run
 from .testcard import CARDS
 
 
-def _size(text: str) -> tuple[int, int]:
+def _size(text):
     part = text.lower().split("x")
     if len(part) != 2:
         raise argparse.ArgumentTypeError("size must look like 1280x720")
@@ -22,7 +20,7 @@ def _size(text: str) -> tuple[int, int]:
     return w, h
 
 
-def parse_args(argv: list[str] | None = None) -> Config:
+def parse_args(argv=None):
     p = argparse.ArgumentParser(prog="piclock", description=__doc__)
     p.add_argument("--fps", type=int, default=None, help="override detected HDMI rate")
     p.add_argument("--size", type=_size, default=None, help="force resolution, e.g. 1280x720")
@@ -61,7 +59,7 @@ def parse_args(argv: list[str] | None = None) -> Config:
     )
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv=None):
     try:
         return run(parse_args(argv))
     except ValueError as exc:

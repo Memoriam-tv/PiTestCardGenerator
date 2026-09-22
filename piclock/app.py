@@ -1,13 +1,10 @@
 """Display setup, HDMI rate detection and the dirty-rect render loop."""
 
-from __future__ import annotations
-
 import math
 import os
 import signal
 import statistics
 import time
-from dataclasses import dataclass
 from pathlib import Path
 
 import pygame
@@ -43,25 +40,39 @@ IDENT_BORDER = (255, 255, 255)
 DEFAULT_CARD_IMAGE = str(Path(__file__).resolve().parent.parent / "cards" / "1080-mtv.png")
 
 
-@dataclass
-class Config:
-    size: tuple[int, int] | None = None
-    card: str = "pm5544"
-    card_image: str | None = None
-    windowed: bool = False
-    fps: int | None = None
-    frames: int | None = None
-    dump_frames: str | None = None
-    log_tc: bool = False
-    stats: bool = False
+class Config(object):
+    """Everything the CLI can set."""
+
+    def __init__(
+        self,
+        size=None,
+        card="pm5544",
+        card_image=None,
+        windowed=False,
+        fps=None,
+        frames=None,
+        dump_frames=None,
+        log_tc=False,
+        stats=False,
+    ):
+        self.size = size
+        self.card = card
+        self.card_image = card_image
+        self.windowed = windowed
+        self.fps = fps
+        self.frames = frames
+        self.dump_frames = dump_frames
+        self.log_tc = log_tc
+        self.stats = stats
 
 
-@dataclass
-class _Stop:
-    flag: bool = False
+class _Stop(object):
+    def __init__(self):
+        self.flag = False
 
 
-def setup_display(cfg: Config) -> pygame.Surface:
+def setup_display(cfg):
+    """Open the display; fullscreen unless --windowed."""
     pygame.display.init()
     pygame.font.init()
 
@@ -69,7 +80,14 @@ def setup_display(cfg: Config) -> pygame.Surface:
         size = cfg.size or (1280, 720)
         flags = 0
     else:
-        size = cfg.size or (0, 0)
+        # SDL 1.2 will not size a fullscreen mode from (0, 0); ask the driver
+        # what the current mode is instead.
+        size = cfg.size
+        if size is None:
+            info = pygame.display.Info()
+            size = (info.current_w, info.current_h)
+            if size[0] <= 0 or size[1] <= 0:
+                size = (0, 0)
         flags = pygame.FULLSCREEN
 
     try:
@@ -82,13 +100,13 @@ def setup_display(cfg: Config) -> pygame.Surface:
     return screen
 
 
-def _snap(hz: float) -> float | None:
+def _snap(hz):
     """Nearest standard rate within 5 %, else None."""
     best = min(KNOWN_RATES, key=lambda rate: abs(hz - rate) / rate)
     return best if abs(hz - best) / best < 0.05 else None
 
 
-def _measure(screen: pygame.Surface, background: pygame.Surface | None) -> float:
+def _measure(screen, background):
     stamps = []
     for _ in range(PROBE_FRAMES):
         if background is not None:
@@ -100,11 +118,7 @@ def _measure(screen: pygame.Surface, background: pygame.Surface | None) -> float
     return 1.0 / median if median > 0 else 0.0
 
 
-def detect_fps(
-    screen: pygame.Surface,
-    override: int | None = None,
-    background: pygame.Surface | None = None,
-) -> tuple[int, float]:
+def detect_fps(screen, override=None, background=None):
     """Return (nominal fps, measured Hz) for the active display mode."""
     measured = _measure(screen, background)
 
@@ -128,9 +142,7 @@ def detect_fps(
     return FALLBACK_FPS, measured
 
 
-def build_background(
-    lay: layout_mod.Layout, card: str = "pm5544", image: str | None = None
-) -> tuple[pygame.Surface, layout_mod.Layout]:
+def build_background(lay, card="pm5544", image=None):
     """Test card + dial face + ident bar chrome: every static pixel, once.
 
     Returns the layout as well, because a card image can move and resize the
@@ -150,7 +162,7 @@ def build_background(
     return background, lay
 
 
-def _pace_to_next_frame(fps: int) -> None:
+def _pace_to_next_frame(fps):
     """Sleep until the wall clock crosses into the next 1/fps frame bucket.
 
     Used only when the flip does not block on vblank.  Pacing against the wall
@@ -165,7 +177,8 @@ def _pace_to_next_frame(fps: int) -> None:
         time.sleep(min(remaining, 0.002))
 
 
-def run(cfg: Config) -> int:
+def run(cfg):
+    """Open the display, build the background and run the render loop."""
     screen = setup_display(cfg)
     lay = layout_mod.compute(screen.get_size())
     background, lay = build_background(lay, cfg.card, cfg.card_image)
@@ -196,10 +209,10 @@ def run(cfg: Config) -> int:
         except ValueError:  # not on the main thread
             pass
 
-    prev_rects: list[pygame.Rect] = []
+    prev_rects = []
     full_repaint = True
     frame = 0
-    durations: list[float] = []
+    durations = []
     dropped = 0
     last_report = time.perf_counter()
     prev_start = None

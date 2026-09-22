@@ -2,14 +2,11 @@
 
 The frame field comes from the fractional second, never from a free-running
 counter, so the timecode cannot drift and a non-integer HDMI rate (59.94) just
-repeats or skips an ``FF`` value now and then — correct for TOD timecode.
+repeats or skips an ``FF`` value now and then - correct for TOD timecode.
 """
-
-from __future__ import annotations
 
 import math
 import time
-from dataclasses import dataclass
 
 import pygame
 
@@ -18,38 +15,49 @@ TC_COLOUR = (235, 235, 235)
 FONT_NAMES = "dejavusansmono,menlo,couriernew,monospace"
 
 
-@dataclass(frozen=True)
-class Timecode:
-    h: int
-    m: int
-    s: int
-    f: int
+class Timecode(object):
+    __slots__ = ("h", "m", "s", "f")
 
-    def text(self) -> str:
-        return f"{self.h:02d}:{self.m:02d}:{self.s:02d}:{self.f:02d}"
+    def __init__(self, h, m, s, f):
+        self.h = h
+        self.m = m
+        self.s = s
+        self.f = f
+
+    def text(self):
+        return "%02d:%02d:%02d:%02d" % (self.h, self.m, self.s, self.f)
+
+    def __eq__(self, other):
+        if not isinstance(other, Timecode):
+            return NotImplemented
+        return (self.h, self.m, self.s, self.f) == (other.h, other.m, other.s, other.f)
+
+    def __repr__(self):
+        return "Timecode(%s)" % self.text()
 
 
-def from_epoch(now: float, fps: int) -> Timecode:
+def from_epoch(now, fps):
+    """Time-of-day timecode for epoch second ``now`` at ``fps``."""
     lt = time.localtime(now)
     frac = now - math.floor(now)
     f = min(fps - 1, int(frac * fps))
     return Timecode(lt.tm_hour, lt.tm_min, lt.tm_sec, f)
 
 
-def _load_font(size: int) -> pygame.font.Font:
+def _load_font(size):
     path = pygame.font.match_font(FONT_NAMES, bold=True)
     if path:
         return pygame.font.Font(path, size)
     return pygame.font.Font(None, size)
 
 
-def cell_advance(font: pygame.font.Font) -> int:
+def cell_advance(font):
     """Fixed per-glyph advance: widest digit plus a little tracking."""
     widest = max(font.size(d)[0] for d in "0123456789")
     return widest + max(1, int(round(font.get_height() * 0.05)))
 
 
-def fit_font(max_w: int, max_h: int, cells: int = 11) -> pygame.font.Font:
+def fit_font(max_w, max_h, cells=11):
     """Largest bold font whose ``cells`` fixed advances fit in ``max_w``."""
     best = None
     for size in range(max(8, int(max_h * 1.6)), 5, -1):
@@ -60,20 +68,20 @@ def fit_font(max_w: int, max_h: int, cells: int = 11) -> pygame.font.Font:
     return best if best is not None else _load_font(6)
 
 
-class DigitAtlas:
+class DigitAtlas(object):
     """Pre-rendered glyphs blitted on a fixed advance.
 
     ``font.render`` never runs in the render loop: the string changes every
-    frame and per-frame rasterisation is unaffordable on a Pi 2.
+    frame and per-frame rasterisation is unaffordable on a Pi.
     """
 
-    def __init__(self, font: pygame.font.Font, colour=TC_COLOUR) -> None:
+    def __init__(self, font, colour=TC_COLOUR):
         self.font = font
         self.advance = cell_advance(font)
         self.height = font.get_height()
-        self.glyphs = {ch: font.render(ch, True, colour) for ch in DIGITS}
+        self.glyphs = dict((ch, font.render(ch, True, colour)) for ch in DIGITS)
 
-    def text_rect(self, text: str, rect: pygame.Rect) -> pygame.Rect:
+    def text_rect(self, text, rect):
         total_w = self.advance * len(text)
         return pygame.Rect(
             rect.x + (rect.w - total_w) // 2,
@@ -82,7 +90,7 @@ class DigitAtlas:
             self.height,
         )
 
-    def blit(self, dest: pygame.Surface, text: str, rect: pygame.Rect) -> pygame.Rect:
+    def blit(self, dest, text, rect):
         out = self.text_rect(text, rect)
         x = out.x
         for ch in text:

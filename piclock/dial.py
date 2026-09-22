@@ -1,19 +1,15 @@
 """Clock dial: static face rendered once, hands drawn per frame.
 
-No ``pygame.transform.rotate`` anywhere — rotation blits are the Pi 2 budget
+No ``pygame.transform.rotate`` anywhere - rotation blits are the Pi's budget
 killer.  Hands are polygons recomputed from the angle each frame and drawn with
 ``pygame.gfxdraw``.
 """
-
-from __future__ import annotations
 
 import math
 import time
 
 import pygame
 import pygame.gfxdraw
-
-from .layout import Layout
 
 # The dial has no face of its own: it is drawn straight onto the card, so a
 # logo in the middle of the card shows through.  The markings are dark with a
@@ -33,12 +29,12 @@ MINUTE = (0.82, 0.020, 2, 0.12, HAND_DARK)
 SECOND = (0.90, 0.013, 3, 0.20, HAND_SECOND)
 
 
-def _polar(cx: float, cy: float, r: float, angle_deg: float) -> tuple[float, float]:
+def _polar(cx, cy, r, angle_deg):
     a = math.radians(angle_deg)
     return cx + r * math.sin(a), cy - r * math.cos(a)
 
 
-def render_face(layout: Layout) -> tuple[pygame.Surface, tuple[int, int]]:
+def render_face(layout):
     """Return the static dial face surface and its blit top-left."""
     r = layout.dial_radius
     size = int(round(2 * (r + FACE_PAD)))
@@ -73,13 +69,7 @@ def render_face(layout: Layout) -> tuple[pygame.Surface, tuple[int, int]]:
     return surf, topleft
 
 
-def hand_points(
-    layout: Layout,
-    angle_deg: float,
-    length_f: float,
-    half_w_f: float,
-    tail_f: float,
-) -> list[tuple[float, float]]:
+def hand_points(layout, angle_deg, length_f, half_w_f, tail_f):
     """Quad outlining a hand; all factors are multiples of the dial radius."""
     r = layout.dial_radius
     length = length_f * r
@@ -99,7 +89,7 @@ def hand_points(
     ]
 
 
-def _bounds(points, inflate: int = 6) -> pygame.Rect:
+def _bounds(points, inflate=6):
     xs = [p[0] for p in points]
     ys = [p[1] for p in points]
     rect = pygame.Rect(
@@ -111,7 +101,7 @@ def _bounds(points, inflate: int = 6) -> pygame.Rect:
     return rect.inflate(inflate * 2, inflate * 2)
 
 
-def _draw_hand(dest: pygame.Surface, layout: Layout, angle: float, spec) -> pygame.Rect:
+def _draw_hand(dest, layout, angle, spec):
     length_f, half_w_f, half_w_min, tail_f, colour = spec
     r = layout.dial_radius
     length = length_f * r
@@ -129,7 +119,7 @@ def _draw_hand(dest: pygame.Surface, layout: Layout, angle: float, spec) -> pyga
     return _bounds(outline)
 
 
-def draw_hands(dest: pygame.Surface, layout: Layout, now: float) -> list[pygame.Rect]:
+def draw_hands(dest, layout, now):
     """Draw hour/minute/second hands plus hub; return the dirty rects."""
     local = now + time.localtime(now).tm_gmtoff
     hour_a = ((local % 43200.0) / 43200.0) * 360.0

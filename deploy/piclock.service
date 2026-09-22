@@ -1,16 +1,23 @@
 [Unit]
 Description=piclock broadcast clock
-After=multi-user.target systemd-user-sessions.service
+After=multi-user.target systemd-user-sessions.service getty@tty1.service
+# tty1 belongs to a getty by default; taking the console means displacing it,
+# otherwise its vhangup kills the clock with SIGHUP.
+Conflicts=getty@tty1.service
 
 [Service]
 Type=simple
 User=pi
-SupplementaryGroups=video render input tty
-Environment=SDL_VIDEODRIVER=kmsdrm
+SupplementaryGroups=video tty input
+Environment=SDL_VIDEODRIVER=fbcon
+Environment=SDL_FBDEV=/dev/fb0
+Environment=SDL_NOMOUSE=1
 Environment=PYTHONUNBUFFERED=1
 WorkingDirectory=/opt/piclock
 ExecStart=/usr/bin/python3 -m piclock
-StandardInput=tty
+StandardInput=tty-force
+StandardOutput=journal
+StandardError=journal
 TTYPath=/dev/tty1
 TTYReset=yes
 TTYVHangup=yes

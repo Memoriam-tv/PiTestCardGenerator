@@ -3,37 +3,54 @@
 Single source of truth: every ratio used by the test card, the dial and the
 timecode bar is derived here from the PM5544 grid of 17 columns x 13 rows.
 Other modules MUST take a :class:`Layout` and never recompute ``w / 17``.
+
+The whole package targets Python 3.4 and pygame 1.9 (that is what the Pi 1 it
+runs on can install): no dataclasses, no f-strings, no variable annotations.
 """
-
-from __future__ import annotations
-
-from dataclasses import dataclass, replace
 
 import pygame
 
 COLS = 17
 ROWS = 13
 
+DIAL_FIT = 0.93  # dial radius as a fraction of the circle it sits in
 
-@dataclass(frozen=True)
-class Layout:
-    w: int
-    h: int
-    cw: float  # cell width  = w / 17
-    ch: float  # cell height = h / 13
-    cx: float  # circle/dial centre x
-    cy: float  # circle/dial centre y (above geometric centre)
-    card_radius: float  # white ring of the test card
-    dial_radius: float  # clock dial
-    tc_rect: pygame.Rect  # ident bar carrying the timecode
-    line_w: int  # grid line width
 
-    def cell(self, col: float, row: float) -> tuple[float, float]:
+class Layout(object):
+    """Fixed geometry for one screen size."""
+
+    __slots__ = (
+        "w",
+        "h",
+        "cw",
+        "ch",
+        "cx",
+        "cy",
+        "card_radius",
+        "dial_radius",
+        "tc_rect",
+        "line_w",
+    )
+
+    def __init__(self, w, h, cw, ch, cx, cy, card_radius, dial_radius, tc_rect, line_w):
+        self.w = w  # screen width
+        self.h = h  # screen height
+        self.cw = cw  # cell width  = w / 17
+        self.ch = ch  # cell height = h / 13
+        self.cx = cx  # circle/dial centre x
+        self.cy = cy  # circle/dial centre y
+        self.card_radius = card_radius  # white circle of the test card
+        self.dial_radius = dial_radius  # clock dial
+        self.tc_rect = tc_rect  # ident bar carrying the timecode
+        self.line_w = line_w  # grid line width
+
+    def cell(self, col, row):
         """Top-left pixel of grid cell (col, row), fractional cells allowed."""
         return col * self.cw, row * self.ch
 
 
-def compute(size: tuple[int, int]) -> Layout:
+def compute(size):
+    """Layout for a screen of ``size``, straight off the 17 x 13 grid."""
     w, h = int(size[0]), int(size[1])
     cw = w / COLS
     ch = h / ROWS
@@ -64,10 +81,7 @@ def compute(size: tuple[int, int]) -> Layout:
     )
 
 
-DIAL_FIT = 0.93  # dial radius as a fraction of the circle it sits in
-
-
-def with_circle(layout: Layout, cx: float, cy: float, r: float) -> Layout:
+def with_circle(layout, cx, cy, r):
     """Re-centre the dial on a circle measured somewhere else (a card image).
 
     The dial fills that circle and the ident bar moves to just below it, so a
@@ -82,11 +96,15 @@ def with_circle(layout: Layout, cx: float, cy: float, r: float) -> Layout:
         int(round(tc_w)),
         max(1, int(round(tc_h))),
     )
-    return replace(
-        layout,
+    return Layout(
+        w=layout.w,
+        h=layout.h,
+        cw=layout.cw,
+        ch=layout.ch,
         cx=cx,
         cy=cy,
         card_radius=r,
         dial_radius=r * DIAL_FIT,
         tc_rect=tc_rect,
+        line_w=layout.line_w,
     )
