@@ -42,6 +42,7 @@ IDENT_BORDER = (255, 255, 255)
 @dataclass
 class Config:
     size: tuple[int, int] | None = None
+    card: str = "pm5544"
     windowed: bool = False
     fps: int | None = None
     frames: int | None = None
@@ -122,9 +123,9 @@ def detect_fps(
     return FALLBACK_FPS, measured
 
 
-def build_background(lay: layout_mod.Layout) -> pygame.Surface:
+def build_background(lay: layout_mod.Layout, card: str = "pm5544") -> pygame.Surface:
     """Test card + dial face + ident bar chrome: every static pixel, once."""
-    background = testcard.render(lay)
+    background = testcard.render(lay, card)
     face, topleft = dial.render_face(lay)
     background.blit(face, topleft)
     background.fill(IDENT_BG, lay.tc_rect)
@@ -154,13 +155,13 @@ def _pace_to_next_frame(fps: int) -> None:
 def run(cfg: Config) -> int:
     screen = setup_display(cfg)
     lay = layout_mod.compute(screen.get_size())
-    background = build_background(lay)
+    background = build_background(lay, cfg.card)
 
     fps, measured = detect_fps(screen, cfg.fps, background)
     vsync_ok = measured > 0 and abs(measured - fps) / fps < 0.02
     print(
-        "piclock: %dx%d fps=%d measured=%.2fHz vsync=%s"
-        % (lay.w, lay.h, fps, measured, "yes" if vsync_ok else "no"),
+        "piclock: %dx%d card=%s fps=%d measured=%.2fHz vsync=%s"
+        % (lay.w, lay.h, cfg.card, fps, measured, "yes" if vsync_ok else "no"),
         flush=True,
     )
 

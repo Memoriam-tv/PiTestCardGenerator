@@ -1,4 +1,4 @@
-"""PM5544-style test card, rendered once into a static background surface."""
+"""Static test card backgrounds: Philips PM5544 and BBC Test Card F styles."""
 
 from __future__ import annotations
 
@@ -85,15 +85,7 @@ def _draw_gratings(surf: pygame.Surface, layout: Layout, row: int) -> None:
             sx += period
 
 
-def render(layout: Layout) -> pygame.Surface:
-    """Return the opaque static background for ``layout``."""
-    surf = pygame.Surface((layout.w, layout.h))
-    surf.fill(GREY)
-    _draw_grid(surf, layout)
-    _draw_castellations(surf, layout)
-    _draw_steps(surf, layout, 2, STAIRCASE)
-    _draw_steps(surf, layout, 4, BARS)
-    _draw_gratings(surf, layout, 8)
+def _draw_ring(surf: pygame.Surface, layout: Layout) -> None:
     pygame.draw.circle(
         surf,
         WHITE,
@@ -101,4 +93,169 @@ def render(layout: Layout) -> pygame.Surface:
         int(round(layout.card_radius)),
         max(2, int(round(layout.ch / 10.0))),
     )
+
+
+def render_pm5544(layout: Layout) -> pygame.Surface:
+    """Philips PM5544: white 17x13 grid over grey, patterns on whole rows."""
+    surf = pygame.Surface((layout.w, layout.h))
+    surf.fill(GREY)
+    _draw_grid(surf, layout)
+    _draw_castellations(surf, layout)
+    _draw_steps(surf, layout, 2, STAIRCASE)
+    _draw_steps(surf, layout, 4, BARS)
+    _draw_gratings(surf, layout, 8)
+    _draw_ring(surf, layout)
     return surf
+
+
+# --- BBC Test Card F style -------------------------------------------------
+#
+# Layout follows the documented elements of Test Card F: no grid over the
+# picture, 95 % colour bars in descending luminance along the top, the grey
+# scale down the left of the central circle, the frequency-response gratings
+# (1.5 .. 5.25 MHz) down the right, castellations round the perimeter with an
+# overscan triangle at the middle of each edge, and a black-bar-on-white
+# ringing patch either side of the ident box.  The photograph inside the circle
+# is replaced by the clock dial, which covers that area anyway.
+
+# 95 % saturation, descending luminance: white, yellow, cyan, green, magenta,
+# red, blue, black.
+_HI, _LO = 242, 12
+BBC_BARS = (
+    (_HI, _HI, _HI),
+    (_HI, _HI, _LO),
+    (_LO, _HI, _HI),
+    (_LO, _HI, _LO),
+    (_HI, _LO, _HI),
+    (_HI, _LO, _LO),
+    (_LO, _LO, _HI),
+    (0, 0, 0),
+)
+
+# Stand-ins for the 1.5/2.5/3.5/4/4.5/5.25 MHz gratings, top to bottom.
+BBC_GRATING_F = (3, 5, 8, 10, 13, 18)
+
+
+def _fill_span(surf: pygame.Surface, span, y: int, h: int, colours) -> None:
+    """Split a horizontal span into equal blocks of ``colours``."""
+    x0, x1 = span
+    n = len(colours)
+    for i, colour in enumerate(colours):
+        sx0 = x0 + int(round(i * (x1 - x0) / n))
+        sx1 = x0 + int(round((i + 1) * (x1 - x0) / n))
+        surf.fill(colour, pygame.Rect(sx0, y, sx1 - sx0, h))
+
+
+def _margins(layout: Layout) -> tuple[int, int, int, int]:
+    """Picture area inside the castellations, and the free columns beside the circle."""
+    x_left = int(round(layout.cw))
+    x_right = int(round(16.0 * layout.cw))
+    gap = layout.ch * 0.12
+    return (
+        x_left,
+        int(round(layout.cx - layout.card_radius - gap)),
+        int(round(layout.cx + layout.card_radius + gap)),
+        x_right,
+    )
+
+
+def _stack_steps(surf: pygame.Surface, rect: pygame.Rect, levels) -> None:
+    n = len(levels)
+    for i, level in enumerate(levels):
+        y0 = rect.y + int(round(i * rect.h / n))
+        y1 = rect.y + int(round((i + 1) * rect.h / n))
+        surf.fill((level, level, level), pygame.Rect(rect.x, y0, rect.w, y1 - y0))
+
+
+def _stack_gratings(surf: pygame.Surface, layout: Layout, rect: pygame.Rect, freqs) -> None:
+    n = len(freqs)
+    for i, f in enumerate(freqs):
+        y0 = rect.y + int(round(i * rect.h / n))
+        y1 = rect.y + int(round((i + 1) * rect.h / n))
+        surf.fill(BLACK, pygame.Rect(rect.x, y0, rect.w, y1 - y0))
+        period = max(2, int(round(layout.cw / f)))
+        half = max(1, period // 2)
+        x = rect.x
+        while x < rect.right:
+            surf.fill(WHITE, pygame.Rect(x, y0, min(half, rect.right - x), y1 - y0))
+            x += period
+
+
+def _draw_overscan_triangles(surf: pygame.Surface, layout: Layout) -> None:
+    """Black arrow in the middle castellation of each edge; all four are white."""
+    cw, ch = layout.cw, layout.ch
+    mid_col, mid_row = COLS // 2, ROWS // 2
+    mx = (mid_col + 0.5) * cw
+    my = (mid_row + 0.5) * ch
+    tris = (
+        ((mx - 0.30 * cw, 0.15 * ch), (mx + 0.30 * cw, 0.15 * ch), (mx, 0.85 * ch)),
+        (
+            (mx - 0.30 * cw, (ROWS - 0.15) * ch),
+            (mx + 0.30 * cw, (ROWS - 0.15) * ch),
+            (mx, (ROWS - 0.85) * ch),
+        ),
+        ((0.15 * cw, my - 0.30 * ch), (0.15 * cw, my + 0.30 * ch), (0.85 * cw, my)),
+        (
+            ((COLS - 0.15) * cw, my - 0.30 * ch),
+            ((COLS - 0.15) * cw, my + 0.30 * ch),
+            ((COLS - 0.85) * cw, my),
+        ),
+    )
+    for tri in tris:
+        pygame.draw.polygon(surf, BLACK, [(int(round(x)), int(round(y))) for x, y in tri])
+
+
+def _draw_ringing_patch(surf: pygame.Surface, rect: pygame.Rect) -> None:
+    """Black bar on white: shows ringing and reflections."""
+    if rect.w < 8 or rect.h < 6:
+        return
+    surf.fill(WHITE, rect)
+    bar_h = max(2, rect.h // 3)
+    surf.fill(BLACK, pygame.Rect(rect.x, rect.centery - bar_h // 2, rect.w, bar_h))
+
+
+def render_bbc(layout: Layout) -> pygame.Surface:
+    """BBC Test Card F style: plain grey field, circle, bars along the top."""
+    surf = pygame.Surface((layout.w, layout.h))
+    surf.fill(GREY)
+    _draw_castellations(surf, layout)
+    _draw_overscan_triangles(surf, layout)
+
+    x_left, x_inner_l, x_inner_r, x_right = _margins(layout)
+
+    bars_y = int(round(layout.ch))
+    bars_h = int(round(2.05 * layout.ch)) - bars_y
+    _fill_span(surf, (x_left, x_right), bars_y, bars_h, BBC_BARS)
+
+    strip_y0 = int(round(2.35 * layout.ch))
+    strip_y1 = int(round(10.65 * layout.ch))
+    left = pygame.Rect(x_left, strip_y0, x_inner_l - x_left, strip_y1 - strip_y0)
+    right = pygame.Rect(x_inner_r, strip_y0, x_right - x_inner_r, strip_y1 - strip_y0)
+    _stack_steps(surf, left, STAIRCASE)
+    _stack_gratings(surf, layout, right, BBC_GRATING_F)
+
+    tc = layout.tc_rect
+    pad = int(round(0.25 * layout.cw))
+    _draw_ringing_patch(surf, pygame.Rect(x_left, tc.y, tc.left - pad - x_left, tc.h))
+    _draw_ringing_patch(surf, pygame.Rect(tc.right + pad, tc.y, x_right - tc.right - pad, tc.h))
+
+    # The circle is large enough to reach into the colour bar band; clearing it
+    # back to grey makes the bars stop at the circle instead of showing through
+    # the translucent dial.
+    pygame.draw.circle(
+        surf, GREY, (int(round(layout.cx)), int(round(layout.cy))), int(round(layout.card_radius))
+    )
+
+    _draw_ring(surf, layout)
+    return surf
+
+
+CARDS = {"pm5544": render_pm5544, "bbc": render_bbc}
+
+
+def render(layout: Layout, card: str = "pm5544") -> pygame.Surface:
+    """Return the opaque static background for ``layout`` in style ``card``."""
+    try:
+        return CARDS[card](layout)
+    except KeyError:
+        raise ValueError("unknown card %r, expected one of %s" % (card, sorted(CARDS))) from None

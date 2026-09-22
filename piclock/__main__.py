@@ -6,6 +6,7 @@ import argparse
 import sys
 
 from .app import Config, run
+from .testcard import CARDS
 
 
 def _size(text: str) -> tuple[int, int]:
@@ -25,6 +26,12 @@ def parse_args(argv: list[str] | None = None) -> Config:
     p = argparse.ArgumentParser(prog="piclock", description=__doc__)
     p.add_argument("--fps", type=int, default=None, help="override detected HDMI rate")
     p.add_argument("--size", type=_size, default=None, help="force resolution, e.g. 1280x720")
+    p.add_argument(
+        "--card",
+        choices=sorted(CARDS),
+        default="pm5544",
+        help="background test card style (default: pm5544)",
+    )
     p.add_argument("--windowed", action="store_true", help="run in a window (dev mode)")
     p.add_argument("--frames", type=int, default=None, help="exit after N frames")
     p.add_argument("--dump-frames", metavar="DIR", default=None, help="save every frame as PNG")
@@ -33,6 +40,7 @@ def parse_args(argv: list[str] | None = None) -> Config:
     a = p.parse_args(argv)
     return Config(
         size=a.size,
+        card=a.card,
         windowed=a.windowed,
         fps=a.fps,
         frames=a.frames,

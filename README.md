@@ -2,9 +2,8 @@
 
 Fullscreen broadcast clock for a Raspberry Pi 2 on HDMI, no desktop:
 
-* PM5544-style test card (17 x 13 grid, castellated border, greyscale staircase,
-  75 % EBU colour bars, definition gratings, centre circle) drawn procedurally at
-  the native resolution;
+* a procedurally drawn test card background at the native resolution, in one of
+  two styles (`--card`): Philips **PM5544** or BBC **Test Card F**;
 * round analog clock — 60 tick marks, 12 major marks, hour/minute/second hands —
   centred on the card circle, second hand sweeping once per rendered frame;
 * time-of-day timecode `HH:MM:SS:FF` in the ident bar below the dial, where `FF`
@@ -26,11 +25,22 @@ python3 -m piclock                              # on the Pi: fullscreen at the c
 |---|---|---|
 | `--fps N` | auto | override the detected HDMI rate |
 | `--size WxH` | native | force resolution (mode request or window size) |
+| `--card NAME` | `pm5544` | background card style: `pm5544` or `bbc` |
 | `--windowed` | off | run in a window instead of fullscreen |
 | `--frames N` | off | exit after N frames |
 | `--dump-frames DIR` | off | save every frame as `frame_%04d.png` |
 | `--log-tc` | off | print the timecode of every frame |
 | `--stats` | off | print frame-time stats once a second |
+
+### Cards
+
+| `--card` | contents |
+|---|---|
+| `pm5544` (default) | white 17 x 13 grid over grey, castellated border, greyscale staircase, 75 % EBU colour bars, five definition gratings, centre circle |
+| `bbc` | Test Card F style: plain grey field, 95 % colour bars in descending luminance along the top, grey scale down the left of the circle, 1.5 – 5.25 MHz frequency-response gratings down the right, castellations with an overscan triangle at the middle of each edge, black-bar-on-white ringing patches flanking the ident box |
+
+Test Card F's photograph of Carole Hersee and the clown is not reproduced — the
+clock dial covers that part of the circle anyway.
 
 `Esc`, `q`, `SIGINT` and `SIGTERM` all stop the loop cleanly (exit code 0).
 
